@@ -7,6 +7,10 @@ all:
 	as --gstabs+ -o $(P).o $(P).s;
 	ld -o $(P) $(P).o
 
+none:
+	as --32 -o $(P).o $(P).s;
+	ld -melf_i386 -o $(P) $(P).o
+
 run:
 	./$(P)
 

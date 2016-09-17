@@ -36,7 +36,7 @@ _start:
 
 	##	Read Prompt From User	##
 	call	Read
-	call Process
+	call 	Process
 
 
 	##	Print Buffer Entered By User	##
@@ -118,6 +118,7 @@ Process:
 
 	# Start Loop
 	jmp PROCESS_L1
+	ret
 
 
 PROCESS_L1:
