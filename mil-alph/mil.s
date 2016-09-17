@@ -1,8 +1,6 @@
 .section .data
 
 Alphabet: .ascii "ALPHA\0   ", "BRAVO\0   ", "CHARLIE\0 ", "DELTA\0   ", "ECHO\0    ", "FOXTROT\0 ", "GOLF\0    ", "HOTEL\0   ", "INDIA\0   ", "JULIETT\0 ", "KILO\0    ", "LIMA\0    ", "MIKE\0    ", "NOVEMBER\0", "OSCAR\0   ", "PAPA\0    ", "QUEBEC\0  ", "ROMEO\0   ", "SIERRA\0  ", "TANGO\0   ", "UNIFORM\0 ", "VICTOR\0  ", "WHISKEY\0 ", "XRAY\0    ", "YANKEE\0  ", "ZULU\0    "
-AlphaSize:	.int	5,	5,	7, 	5,	4,	7,	4,	5,	5,	7,	4,	4,	4,	8,	5,	4,	6,	5,	6,	5,	7,	6,	7,	4,	6,	4
-AlphaOffset:	.int	0,	6,	12,	20,	26,	31,	39,	44,	50,	56,	64, 69,	74,	79,	88,	94,	99,	106,	112,	119, 125, 133, 140,	148, 153, 160
 NewLine:	.asciz "\n"
 Space:		.asciz " "
 
@@ -20,10 +18,8 @@ _start:
 
 	call	Read
 
-#	movl	$MsgBuf, %eax
-#	call	Print
-
 	call 	Process
+	call	PrintNL
 	call 	EndProg
 
 Process:
@@ -55,10 +51,14 @@ P_LOOP:
 
 
 #	{{{ Get The next character present in the buffer }}}
-	movl $0, %eax
-	movl $MsgBuf, %esi
-	addl %ecx,	%esi		# Increment to next character
-	movb (%esi), %al		# Place next character into AL
+	movl 	$0, %eax
+	movl 	$MsgBuf, %esi
+	addl 	%ecx,	%esi		# Increment to next character
+	movb 	(%esi), %al			# Place next character into AL
+
+#	{{ Check if character is a space? }}
+	cmpb	$32, %al
+	je		P_SPACE
 
 #	{{ Check to see if character is upper or lower case }}
 	cmpb	$90, %al
@@ -75,6 +75,10 @@ P_LOWER:
 	subb	$97, %al		# Offset the ASCII value by 97 to set a=0 and z=25
 	jmp		P_CMP
 
+P_SPACE:
+	call	PrintNL
+	jmp		P_CONT
+
 P_CMP:
 #	{{ Check to see if the character is out of range of what we want, 0-25 }}
 	cmpb	$0, %al
@@ -87,11 +91,9 @@ P_CMP:
 P_PRINT:
 #	{{ Print the associated military code for the acceptable letter in AL }}
 	pushl	%eax
-#	pushl	%edx	# Holding the character range from eax
 	pushl	%esi
 	pushl	%ebx
 
-	#movl	%ecx, %ebx	# Put the counter into EBX for multiplication
 	imull	$9, %eax	# Multiply counter by 9 to get the array ptr math to locate the military letter start
 
 	movl	$Alphabet, %esi	# Make a pointer into ESI
@@ -131,7 +133,6 @@ Print:
 	movl	%edx,	%eax	# Place the string into A
 	call 	PrintBuf
 
-	#popl	%eax
 	popl	%ebx
 	popl	%ecx
 	popl	%edx
@@ -150,7 +151,7 @@ PrintSpace:
 	movl	$1, %ebx
 	movl	$Space, %ecx
 	movl	$1, %edx
-	int	$0x80
+	int		$0x80
 
 	popf
 	popl	%edx
@@ -161,23 +162,12 @@ PrintSpace:
 	ret			# Go back to the calling instruction
 
 Read:
-	pushl	%eax
-	pushl	%ebx
-	pushl	%ecx
-	pushl	%edx
-	pushf
 
 	movl	$0,	%ebx
 	movl	$3, %eax
 	movl	$MsgBuf,	%ecx
 	movl	$256,	%edx
 	int 	$0x80
-
-	popl	%eax
-	popl	%ebx
-	popl	%ecx
-	popl	%edx
-	popf
 
 	ret
 
@@ -193,7 +183,7 @@ PrintBuf:
 
 	movl	$4, %eax	# prepare print function
 	movl	$1, %ebx	# send buffer to screen
-	int	$0x80
+	int		$0x80
 
 	popf
 	popl	%edx
@@ -227,8 +217,28 @@ strlen:
 
 	ret		# Go back to the calling instruction
 
+PrintNL:
+	pushl	%eax		# Save the registers
+	pushl	%ebx		# so the caller doesnt
+	pushl	%ecx		# need to worry about
+	pushl	%edx		# data loss in the regsters
+	pushf			# Save the falgs as well
+
+	movl	$4, %eax	# Print a new Line Character
+	movl	$1, %ebx
+	movl	$NewLine, %ecx
+	movl	$1, %edx
+	int		$0x80
+
+	popf
+	popl	%edx
+	popl	%ecx
+	popl	%ebx
+	popl	%eax		# Restore all of the registers used
+
+	ret			# Go back to the calling instruction
 
 EndProg:
 	movl	$1,	%eax
 	movl	$0,	%ebx
-	int	$0x80
+	int		$0x80
