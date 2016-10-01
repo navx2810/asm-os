@@ -5,7 +5,7 @@
 .section .data
 
 	Prompt:	.asciz "Please enter a decimal number in the form of: 999.99\n"
-	InvalidDecimal:	.asciz "You entered an invalid decimal, please enter it in the form of 999.99\n"
+	InvalidDecimal:	.asciz "You entered an invalid input, please enter it in the form of 999.99\n"
 
 	Hundreds: .ascii "\0             ", "One-Hundred\0  ", "Two-Hundred\0  ", "Three-Hundred\0", "Four-Hundred\0 ", "Five-Hundred\0 ", "Six-Hundred\0  ", "Seven-Hundred\0", "Eight-Hundred\0", "Nine-Hundred\0 "
 	HundredsOffset: .int 14
@@ -24,10 +24,14 @@
 	Hyphen:		.asciz "-"
 	And:		.asciz " Dollars and "
 	Cents:		.asciz "Cents"
+	ZeroAnd:	.asciz "Zero Dollars and "
+	NoCents:	.asciz "Zero Cents"
 
 	IsDecimal:						.int	0
 	ShouldUseHyphen:				.int	0
 	ShouldUseSpecialTens:			.int	0
+	ZeroDollars:					.int	1
+	ZeroCents:						.int	1
 
 	WholeNumberCount:				.int 	0
 	DecimalNumberCount:				.int 	0
@@ -54,8 +58,9 @@ Main:
 	call	ReadInput
 	call	FindCount
 
-	cmpl	$1, DecimalNumberCount
-	jne		PrintCount
+	cmpl	$2, DecimalNumberCount
+	jne		DisplayError
+	jmp		PrintCount
 DisplayError:
 	movl	$InvalidDecimal, %eax
 	call	Print
@@ -113,7 +118,7 @@ P_L_Decimal:
 
 
 P_G3A:
-	cmpb	$0, %dl
+	cmpb	$48, %dl						# If the value in place is 0, skip it
 	je		P_CONT
 
 	movl	%edx, %eax						# Prepare for the offset function
@@ -149,6 +154,8 @@ P_G2_Use_Special:
 
 
 P_G1A:
+
+
 	cmpl	$1, ShouldUseHyphen			# Was the tens place between 2-9?
 	je		P_G1_Hyphen
 	cmpl	$1, ShouldUseSpecialTens	# Was the tens place 1?
