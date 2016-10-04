@@ -3,7 +3,7 @@
 
 .section .data
 
-Input: .byte 3
+Input: .byte '3'
 
 Morning: .asciz "Good Morning\n"
 Afternoon: .asciz "Good Afternoon\n"
@@ -19,13 +19,13 @@ _start:
 	call 	EndProg
 
 Switch:
-	cmpb	$1, %bl			# Check if BL is 1
+	cmpb	$'1', %bl			# Check if BL is 1
 	je	S_One
 
-	cmpb	$2, %bl			# Check if BL is 2
+	cmpb	$'2', %bl			# Check if BL is 2
 	je	S_Two
 
-	cmpb	$3, %bl			# Check if BL is 3
+	cmpb	$'3', %bl			# Check if BL is 3
 	je	S_Three
 
 	movl	$Welcome, %eax	# If BL was not 1, 2, or 3, Print the default statement
