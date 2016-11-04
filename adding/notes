@@ -1,0 +1,47 @@
+# Adding numbers
+
+## High-level explaination
+
+	Get Input for Number A
+	Get Input for Number B
+
+	Repeat for A and B
+	Get Length for Number
+		Count = 0
+		If Num[Count] is a number
+			Count ++
+			Repeat
+		Otherwise, Break
+
+	Repeat for A and B
+		Calculate Sum
+
+
+	Print Number A
+	Print " + "
+	Print Number B
+
+## Convert Total to String
+	Get Address at the end of the Buffer
+	Convert till d is 0 and place r into endBufferLocation - 1
+
+	## Pad Left
+		Get Start of Buffer
+		Loop till a number is found OR until the \0 is found
+		place number into
+
+## Pad Left
+	PadLoop
+		Get first empty space in buffer
+			SpaceLoop
+				push ecx
+				If ' ' is found
+					loop SpaceLoop
+				If a number is found
+					place number found into empty space address
+					place ' ' into original number place
+					pop	ecx
+					loop PadLoop
+				If the anything else was found, there are no more numbers
+					pop ecx
+					return
