@@ -8,6 +8,7 @@
 	EqualsSign:	.asciz " = "
 	APrompt:	.asciz "Please enter a positive number between 0 and 999999999 (999,999,999), without ',': "
 	BPrompt:	.asciz "Please enter another positive number between 0 and 999999999 (999,999,999), without ',': "
+	ErrorMsg:	.asciz "You entered bad input. Please try running the application again.\n"
 	NewLine: 	.byte 10
 
 	# NOTE: Ask Yoas why the hell two bytes next to each other can overwrite the last one when doing a { MOVB %al }, BLen. Changed them to int to solve problem temporarilly.
@@ -33,7 +34,7 @@
 _start:
 
 	leal	APrompt, %eax
-	call	PrintWithSearch
+	call	PrintTilNull
 
 	# Read input into A
 	leal	A, %eax			# Place Buffer into EAX for ReadInput
@@ -41,7 +42,7 @@ _start:
 	movl	%eax, ALen		# Move final count of input into ALen
 
 	leal	BPrompt, %eax
-	call	PrintWithSearch
+	call	PrintTilNull
 
 	# Read input into B
 	leal	B, %eax			# Place Buffer into EAX for ReadInput
@@ -172,7 +173,7 @@ StrLen:
 
 # Function to print a string while looking for a \0 value
 # EAX { String to print }
-PrintWithSearch:
+PrintTilNull:
 	pushal				# Store all register states
 
 	movl	%eax, %edi	# Move the string into EDI for StrLen
@@ -211,6 +212,7 @@ ReadInput:
 	pushl	%ebx
 	pushl	%ecx
 	pushl	%edx
+	pushl	%esi
 
 	movl	%eax, %ecx		# Move buffer into ECX
 	movl	$3, %eax		# Read
@@ -218,10 +220,29 @@ ReadInput:
 	movl	$10, %edx		# With a length of 10
 	int 	$0x80
 
+	pushl	%eax			# Store the length of the input
+
+	movl	%ecx, %esi		# Move buffer into ESI
+	movl 	%eax, %ecx		# Move length to counter
+	dec		%ecx			# Offset for null-byte
+Loop_CheckForNonNumber:					# Check for a non-number character in input
+	lodsb								# Pop the character in ESI into EAX
+	cmpb	$'0', %al					# Check if the character is less than '0'
+	jl		Loop_CheckForNonNumber_Bad
+	cmpb	$'9', %al					# Check if character is greater than '9'
+	jg		Loop_CheckForNonNumber_Bad
+	loop	Loop_CheckForNonNumber		# If it is a number, continue the loop
+	jmp		Loop_CheckForNonNumber_End	# When the loop is done, finish up
+Loop_CheckForNonNumber_Bad:
+	leal	ErrorMsg, %eax				# Load error prompt and display it
+	call	PrintTilNull
+	call	EndProg
+Loop_CheckForNonNumber_End:
+	popl	%eax			# Restore the length of input
+	popl	%esi
 	popl	%edx
 	popl	%ecx
 	popl	%ebx
-
 	ret
 
 # Function to convert input to Integer
