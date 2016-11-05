@@ -66,21 +66,21 @@ _start:
 	movl	%ebx, Sum
 
 	# Build Sum String
-	leal	SumBuffer+11, %edi
-	movl	%ebx, %eax
-	movl	$10, %ecx	# Divisor
-	std
+	leal	SumBuffer+11, %edi		# Place end of Buffer into EDI
+	movl	%ebx, %eax				# Move total into EAX
+	movl	$10, %ecx				# Put Divisor into ECX
+	std								# Set direction to go from right-to-left
 Loop_BuildStr:
-	xor		%edx, %edx
+	xor		%edx, %edx				# Clear EDX
 
-	div		%ecx
-	addl	$'0', %edx
-	xchg	%eax, %edx
-	stosb
-	xchg	%eax, %edx
+	div		%ecx					# Divide EAX by 10
+	addl	$'0', %edx				# Offset the remainder to get ASCII
+	xchg	%eax, %edx				# Swap EAX and EDX to store byte
+	stosb							# Store byte from AL
+	xchg	%eax, %edx				# Swap EAX and EDX back
 
-	cmpl	$0, %eax
-	jne		Loop_BuildStr
+	cmpl	$0, %eax				# Check to see if Quotient is 0
+	jne		Loop_BuildStr			# If not, do it again
 
 	# Pad String Left
 	movl	$12, %ecx		# Move 12 into ECX (max number available in buffer)
@@ -161,17 +161,16 @@ StrLen:
 
 	movl $256, %ecx			# Arbitrary max number for search
 	cld						# Clear Direction flag for search
-	repne scasb				# Repeat till none
+	repne scasb				# Search string for AL
 	subl $256, %ecx			# Subtract arbitrary value
 	not %ecx				# Negate the value to remove sign
-	inc %ecx				# Add one to replace the lost bit
 
 	movl %ecx, %eax			# Move the final value into EAX for return statement
 
 	popl %ecx				# Return ECX to previous state
 	ret
 
-# Function to print a string while looking for a \0 value
+# Function to print a string while looking for a '\0' value
 # EAX { String to print }
 PrintTilNull:
 	pushal				# Store all register states
@@ -253,9 +252,9 @@ ToInt:
 	pushl	%eax
 	dec		%ecx		# Offset the counter by -1 to account for new-line
 
-	xorl	%ebx, %ebx	# Set EBX (total value) to zero
+	xor		%ebx, %ebx	# Clear EBX (total value) to zero
 LoopInt:
-	lodsb				# Load the character into EAX
+	lodsb				# Load the character into AL
 	subb	$'0', %al	# Offset the ASCII number
 	imull	$10, %ebx	# Offset the total by 10 to make room for number
 	addl	%eax, %ebx	# Place number into the total
