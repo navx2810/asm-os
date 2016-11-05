@@ -18,11 +18,14 @@
 	BTotal:		.int 0
 	Sum:		.int 0
 
-	SumBuffer:	.asciz "            "	# 12 character buffer length, ASCIZ for \0
+	SumBuffer:	.asciz "            "	# 12 character buffer length, ASCIZ for '\0', Could place this in bss
+	PadBufferLength: .int 0				# Keeps track of the total characters in the Buffer
 
 .section .bss
 	.lcomm A, 10
 	.lcomm B, 10
+
+	.lcomm PadBuffer, 13
 
 .section .text
 .globl _start
@@ -37,7 +40,6 @@ _start:
 	call	ReadInput
 	movl	%eax, ALen		# Move final count of input into ALen
 
-	#call	PrintNL
 	leal	BPrompt, %eax
 	call	PrintWithSearch
 
@@ -79,32 +81,65 @@ Loop_BuildStr:
 	cmpl	$0, %eax
 	jne		Loop_BuildStr
 
+	# Pad String Left
+	movl	$12, %ecx		# Move 12 into ECX (max number available in buffer)
+	leal	SumBuffer, %esi	# Move the Sum buffer that is right-aligned into ESI
+	leal	PadBuffer, %edi	# Move the new buffer that will hold the left-aligned string in EDI
+	cld						# Clear Direction to move right-to-left
+Loop_Pad:
+	xor		%eax, %eax		# Clear EAX
+	lodsb					# Pop the first character from the Sum in ESI
+	cmpl	$32, %eax		# Check to see if it is a ' ' character
+	je Loop_Pad_Cont
+	stosb					# If it is not a ' ' character, store the character in EDI
+Loop_Pad_Cont:
+	loop Loop_Pad
+	movl	$0, %eax		# Move a '\0' into EAX
+	stosb					# Push '\0' in EDI
+
+	# Get Pad Buffer Length by checking ' ' count in Right-padded buffer
+	leal	SumBuffer, %edi
+	movl	$32, %eax		# Use ' ' as a search term
+	movl	$13, %ecx		# Move the max value of buffer which is 13 including '\0'
+	repe	scasb			# Repeat while the character is a ' '
+	movl	%ecx, PadBufferLength
+
 	# Prepare to print sum statement
 
 	movl	$4, %eax		# Write
 	movl	$1, %ebx		# Stdout
 
+	pushl	%eax			# Save the 4 for write
 	leal	A, %ecx
 	movl	ALen, %edx
-	dec		%edx
+	dec		%edx			# Offset the count by -1 to ignore '\0'
 	int		$0x80
+	popl	%eax			# Restore the 4 for write
 
+	pushl	%eax			# Save the 4 for write
 	leal	PlusSign, %ecx
 	movl	$4, %edx
 	int		$0x80
+	popl	%eax			# Restore the 4 for write
 
+	pushl	%eax			# Save the 4 for write
 	leal	B, %ecx
 	movl	BLen, %edx
-	dec		%edx
+	dec		%edx			# Offset the count by -1 to ignore '\0'
 	int		$0x80
+	popl	%eax			# Restore the 4 for write
 
+	pushl	%eax			# Save the 4 for write
 	leal	EqualsSign, %ecx
 	movl	$4, %edx
 	int		$0x80
+	popl	%eax			# Restore the 4 for write
 
-	leal	SumBuffer, %ecx
-	movl	$12, %edx
+	pushl	%eax			# Save the 4 for write
+	leal	PadBuffer, %ecx
+	movl	PadBufferLength, %edx
 	int		$0x80
+	popl	%eax			# Restore the 4 for write
 
 	leal	NewLine, %ecx
 	movl	$1, %edx
@@ -186,6 +221,7 @@ ReadInput:
 	popl	%edx
 	popl	%ecx
 	popl	%ebx
+
 	ret
 
 # Function to convert input to Integer
