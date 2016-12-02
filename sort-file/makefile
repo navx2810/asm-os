@@ -1,4 +1,4 @@
-P=XXX
+P=file
 
 x32:
 	echo "\nI am running this program on a 64 bit compiler, so I pass flags to the assembler and linker to force 32 bit\nIf this doesn't work for you Dr. Yoas, try \"make all\"\n\n"
