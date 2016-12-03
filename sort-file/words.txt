@@ -1,6 +1,5 @@
-Apple
-Apple1
 Oranges
+Apple
 Grapes
 Strawberries
 Cantalop

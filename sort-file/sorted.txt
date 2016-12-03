@@ -1,2 +1,5 @@
-ok
-lo
+Apple
+Cantalop
+Grapes
+Oranges
+Strawberries
