@@ -1,4 +1,4 @@
-# Program:	Read a file, sort its contents and write it back out to a new file
+# Program:	Read a file, sort its contents and write it out to a new file
 # Author:	Matt Fetterman
 # Date:		12/02/2016
 
@@ -21,7 +21,6 @@
 	.equ	O_RDONLY,	00
 
 .section .bss
-	# FileHandle could go here if you want
 	.lcomm	words,	20*16	# Provide space for 20 words with 16 characters in each possible word
 	.lcomm	upper_case_words,	20*16	# Provides a buffer to store the upper-case version into
 
@@ -29,38 +28,13 @@
 .globl _start
 
 _start:
-	# Open text file to write the name
-	#movl	$5, %eax
-	#movl	$FileName, %ebx
-	#movl	$(O_CREAT+O_RDWR), %ecx	# File Modes
-	#movl	$0644, %edx	# Permission
-	#int	$0x80
-
-	#test	%eax, %eax	# Check if there is an error
-	#js	EndProg		# Jump to handle error
-	#movl	%eax, FileHandle
-
-	# Write name to file
-	#movl	$4, %eax
-	#movl	FileHandle, %ebx
-	#movl	$buffer, %ecx
-	#movl	inputLen, %edx
-	#int	$0x80
-
-	#test	%eax, %eax	# Check if there was an error writing
-	#js	EndProg
-
-	# Close the file
-	#movl	$6, %eax
-	#movl	FileHandle, %ebx
-	#int	$0x80
 
 ReadFile:
 	movl	$5, %eax
 	leal	ReadName, %ebx
 	movl	$O_RDONLY, %ecx
 	movl	$0644, %edx	# Pass chmod permissions for 6-4-4
-	int	$0x80
+	int		$0x80
 
 	test	%eax, %eax
 	js		EndProg
@@ -75,13 +49,6 @@ ReadFile:
 	test	%eax, %eax
 	js		EndProg
 	movl	%eax, ReadLen
-
-#	movl	%eax, %edx	# Print the read
-#	movl	$4, %eax
-#	movl	$1, %ebx
-#	leal	words, %ecx
-#	int		$0x80
-
 				# Close the file
 	movl	$6, %eax
 	leal	ReadFH, %ebx
@@ -96,7 +63,7 @@ ReadFile:
 	movl	%esi, Pointers(, %edx, 4)	# Put the first location into the slot[0] for the array of pointers
 Loop:
 	lodsb				# Pop the first character off into AL
-	inc	%ebx			# Increase the string length counter
+	inc		%ebx			# Increase the string length counter
 	cmpb	$'\n', %al	# Check to see if the character is a new-line
 	jne		Loop_Cont
 	movl	%ebx, PointersLen(, %edx, 4)
@@ -109,16 +76,7 @@ Loop_Cont:
 	js		Loop_End	# If it is negative, jump to end
 	loop	Loop
 Loop_End:
-	movl	%edx, PointerCounter
-#	{ Print the test array }
-	xor		%edx, %edx
-
-	movl	$2, %edx
-	movl	$4, %eax
-	movl	$1, %ebx
-	movl	Pointers(, %edx, 4), %ecx
-	movl	PointersLen(, %edx, 4), %edx
-	int		$0x80
+	movl	%edx, PointerCounter	# Store the counter for pointers
 
 TransformUpperCase:
 	leal	words, %esi				# Place the original buffer into the source
@@ -136,17 +94,6 @@ TUC_Loop:
 TUC_Cont:
 	stosb							# Place new value into new buffer
 	loop	TUC_Loop
-
-	# !{ I did the operations above so I did not have to replace all occurances of the old buffer with the new buffer, it essentially copies the new buffers contents }
-	# 			TODO: Delete me. I looked through this and realized that I really dont need to copy the buffer over, it works just fine as is
-#	leal	words, %edi				# Flip the order, words goes to destination
-#	leal	upper_case_words, %esi	# upper_case_words goes to source
-#	movl	ReadLen, %ecx			# Place length for counter
-#TUC_Final_Loop:
-#	lodsb							# Load the character from new buffer
-#	stosb							# Store the character into old buffer
-#	loop	TUC_Final_Loop
-
 
 Cmp_PreLoop:
 	xor		%edx, %edx				# Reset the index counter to 0
@@ -191,39 +138,38 @@ Cmp_Cont:
 	inc		%edx		# Move Index counter to next array element
 	loop	Cmp_Loop
 
-	mov		SortedFlag, %eax
-	test	%eax, %eax
-	jnz		Cmp_PreLoop
+	mov		SortedFlag, %eax	# Place the sort check flag into EAX
+	test	%eax, %eax			# Test if the flag is zero
+	jnz		Cmp_PreLoop			# If not, run the sort again
 
-	movl	PointerCounter, %ecx
+	movl	PointerCounter, %ecx	# Store the counter for main print loop
 TestPrintSortedArray:
-	pushl	%ecx
+	pushl	%ecx					# Push the main counter
 
-	movl	%ecx, %edx
-	subl	PointerCounter, %edx
-	not		%edx
+	movl	%ecx, %edx				# Move it to EDX
+	subl	PointerCounter, %edx	# Subtract the value from the max pointer counter value to get offset
+	not		%edx					# Negate and increment to get value
 	inc		%edx
-	movl	Pointers(, %edx, 4), %edi
+	movl	Pointers(, %edx, 4), %edi	# Move the pointer at the counter location to EDI
 
-	movl	$'\n', %eax
-	movl	$20, %ecx
-	cld
-	repne	scasb
-	subl	$20, %ecx
-	not		%ecx
+	movl	$'\n', %eax				# Place '\n' as the search term for repne
+	movl	$20, %ecx				# Place 20 as the maximum word length
+	cld								# Clear direction flag
+	repne	scasb					# Repeatedly scan till '\n' is found
+	subl	$20, %ecx				# Calculate the length of the string by offsetting max
+	not		%ecx					# Negative and increment to get actual value
 	inc		%ecx
 
-	movl	%ecx, PointersLen(, %edx, 4)
+	movl	%ecx, PointersLen(, %edx, 4)	# Store the length into Pointers Length { Needed since the array positions were switched around earlier. }
 
-	movl	$4, %eax
+	movl	$4, %eax	# Prepare to print the value at the pointer
 	movl	$1, %ebx
-	movl	Pointers(, %edx, 4), %edx
-	xchg	%ecx, %edx
-
+	movl	Pointers(, %edx, 4), %edx	# Move pointers to EDX for switch
+	xchg	%ecx, %edx					# Flip the registers
 
 	int		$0x80
 
-	popl	%ecx
+	popl	%ecx		# Pop the pointer counter for loop
 	loop	TestPrintSortedArray
 
 WriteToFile:
@@ -231,44 +177,36 @@ WriteToFile:
 	movl	$5, %eax
 	movl	$FileName, %ebx
 	movl	$(O_CREAT+O_RDWR), %ecx	# File Modes
-	movl	$0644, %edx	# Permission
-	int	$0x80
+	movl	$0644, %edx	# Permissions
+	int		$0x80
 
 	test	%eax, %eax	# Check if there is an error
-	js	EndProg		# Jump to handle error
-	movl	%eax, FileHandle
+	js		EndProg		# Jump to handle error
+	movl	%eax, FileHandle	# Store the handler
 
 	movl	PointerCounter, %ecx	# Place the length of the pointers for looping
 
-	movl	FileHandle, %ebx
-	movl	$4, %eax
+	movl	FileHandle, %ebx	# Store the handle in EBX
 Write_Loop:
-	pushl	%ecx
-	subl	PointerCounter, %ecx	# Subtracting
-	not		%ecx
+	pushl	%ecx		# Store counter
+	subl	PointerCounter, %ecx	# Subtract the counter from the amount of pointers
+	not		%ecx					# Negate and increment to get value
 	inc		%ecx
-	movl	PointersLen(, %ecx, 4), %edx
-	movl	Pointers(, %ecx, 4), %ecx
+	movl	PointersLen(, %ecx, 4), %edx	# Move the length of the pointer into EDX for print
+	movl	Pointers(, %ecx, 4), %ecx		# Move the pointer into ECX for print
 	movl	$4, %eax
 	int		$0x80
 
-	# Write name to file
-	#movl	$4, %eax
-	#movl	FileHandle, %ebx
-	#movl	$buffer, %ecx
-	#movl	inputLen, %edx
-	#int	$0x80
-
 	test	%eax, %eax	# Check if there was an error writing
-	js	Finish
-	popl	%ecx
+	js		Finish
+	popl	%ecx		# Pop the pointer counter
 	loop	Write_Loop
 
 Finish:
 	# Close the file
 	movl	$6, %eax
 	movl	FileHandle, %ebx
-	int	$0x80
+	int		$0x80
 
 EndProg:
 	movl	$1,	%eax

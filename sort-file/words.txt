@@ -2,4 +2,13 @@ Oranges
 Apple
 Grapes
 Strawberries
-Cantalop
+Cantalope
+Apricots
+Blueberries
+Peaches
+Bananas
+Kiwi
+Raspberries
+Memberberries
+Honeydew
+Watermelon
